@@ -4,10 +4,12 @@ import LayerSpecsSection from "@/components/LayerSpecsSection";
 import InferenceSection from "@/components/InferenceSection";
 import ComparisonSection from "@/components/ComparisonSection";
 import DemoSection from "@/components/DemoSection";
+import TrainingSection from "@/components/TrainingSection";
 
 const navLinks = [
   { href: "#architecture", label: "Architecture" },
   { href: "#specs", label: "Specs" },
+  { href: "#training", label: "Training" },
   { href: "#comparison", label: "Compare" },
   { href: "#demo", label: "Demo" },
   { href: "#inference", label: "Inference" },
@@ -42,6 +44,7 @@ const Index = () => (
       <HeroSection />
       <ArchitectureSection />
       <LayerSpecsSection />
+      <TrainingSection />
       <ComparisonSection />
       <DemoSection />
       <InferenceSection />
