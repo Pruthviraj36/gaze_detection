@@ -1,55 +1,104 @@
 import ScrollReveal from "./ScrollReveal";
-import { Eye, Cpu, Layers } from "lucide-react";
+
+const EyeVisualization = () => (
+  <div className="relative w-48 h-48 md:w-64 md:h-64 mx-auto">
+    {/* Outer ring */}
+    <div className="absolute inset-0 rounded-full border border-primary/20 animate-pulse-glow" />
+    {/* Mid ring */}
+    <div className="absolute inset-4 rounded-full border border-primary/10" />
+    {/* Eye shape */}
+    <svg viewBox="0 0 200 200" className="absolute inset-0 w-full h-full">
+      {/* Crosshairs */}
+      <line x1="100" y1="30" x2="100" y2="170" stroke="hsl(var(--muted-foreground))" strokeWidth="0.5" strokeDasharray="4 4" opacity="0.3" />
+      <line x1="30" y1="100" x2="170" y2="100" stroke="hsl(var(--muted-foreground))" strokeWidth="0.5" strokeDasharray="4 4" opacity="0.3" />
+      {/* Eye outline */}
+      <ellipse cx="100" cy="100" rx="55" ry="35" fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5" opacity="0.6" />
+      {/* Iris */}
+      <circle cx="100" cy="100" r="22" fill="none" stroke="hsl(var(--primary))" strokeWidth="1" opacity="0.4" />
+      {/* Pupil */}
+      <circle cx="100" cy="100" r="10" fill="hsl(var(--primary))" opacity="0.5" />
+      {/* Gaze vector */}
+      <line x1="100" y1="100" x2="135" y2="78" stroke="hsl(var(--primary))" strokeWidth="2" opacity="0.8" />
+      <circle cx="135" cy="78" r="3" fill="hsl(var(--primary))" />
+      {/* Angle indicators */}
+      <text x="140" y="75" fill="hsl(var(--primary))" fontSize="8" fontFamily="JetBrains Mono" opacity="0.7">θ</text>
+      <text x="105" y="95" fill="hsl(var(--muted-foreground))" fontSize="7" fontFamily="JetBrains Mono" opacity="0.5">pitch</text>
+      <text x="108" y="106" fill="hsl(var(--muted-foreground))" fontSize="7" fontFamily="JetBrains Mono" opacity="0.5">yaw</text>
+    </svg>
+    {/* Corner markers */}
+    <div className="absolute top-0 left-0 w-4 h-4 border-l border-t border-primary/30" />
+    <div className="absolute top-0 right-0 w-4 h-4 border-r border-t border-primary/30" />
+    <div className="absolute bottom-0 left-0 w-4 h-4 border-l border-b border-primary/30" />
+    <div className="absolute bottom-0 right-0 w-4 h-4 border-r border-b border-primary/30" />
+  </div>
+);
 
 const stats = [
-  { icon: Eye, label: "Output", value: "2D Gaze Vector" },
-  { icon: Cpu, label: "Parameters", value: "~12.5M" },
-  { icon: Layers, label: "Backbone", value: "ResNet-18" },
+  { value: "12.5M", label: "Parameters", sub: "Total weights" },
+  { value: "512", label: "Feature Dim", sub: "CNN output" },
+  { value: "2", label: "Output Dim", sub: "Pitch & Yaw" },
+  { value: "64×64", label: "Input Size", sub: "Grayscale" },
 ];
 
 const HeroSection = () => (
-  <section className="relative overflow-hidden pt-24 pb-20 md:pt-32 md:pb-28">
-    {/* Subtle grid */}
-    <div className="absolute inset-0 opacity-[0.035]" style={{
-      backgroundImage: "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)",
-      backgroundSize: "48px 48px"
-    }} />
+  <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+    {/* Background grid */}
+    <div
+      className="absolute inset-0 opacity-[0.04]"
+      style={{
+        backgroundImage:
+          "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)",
+        backgroundSize: "64px 64px",
+      }}
+    />
+    {/* Radial glow */}
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-primary/[0.04] blur-[120px]" />
 
-    <div className="container relative max-w-5xl mx-auto px-6">
-      <ScrollReveal>
-        <p className="font-mono text-sm tracking-wider uppercase text-muted-foreground mb-4">
-          Deep Learning · Gaze Estimation
-        </p>
-      </ScrollReveal>
-
-      <ScrollReveal delay={80}>
-        <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-foreground text-balance leading-[0.95] mb-6">
-          MPIIGaze Model
-        </h1>
-      </ScrollReveal>
-
-      <ScrollReveal delay={160}>
-        <p className="text-lg md:text-xl text-muted-foreground max-w-2xl text-pretty leading-relaxed mb-12">
-          A CNN-based regression model built on a modified ResNet-18 backbone, 
-          optimized for precision eye-tracking from grayscale eye patches with 
-          integrated head pose compensation.
-        </p>
-      </ScrollReveal>
-
-      <ScrollReveal delay={260}>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {stats.map((s) => (
-            <div
-              key={s.label}
-              className="group relative rounded-xl border bg-[hsl(var(--surface-elevated))] p-5 transition-shadow duration-300 hover:shadow-lg hover:shadow-primary/5"
-            >
-              <s.icon className="w-5 h-5 text-primary mb-3" strokeWidth={1.8} />
-              <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider mb-1">{s.label}</p>
-              <p className="text-lg font-semibold text-foreground">{s.value}</p>
+    <div className="container relative max-w-6xl mx-auto px-6 py-24">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div>
+          <ScrollReveal>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/[0.06] mb-8">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary glow-dot" />
+              <span className="font-mono text-[11px] tracking-wider uppercase text-primary">
+                ResNet-18 · CNN Regression
+              </span>
             </div>
-          ))}
+          </ScrollReveal>
+
+          <ScrollReveal delay={80}>
+            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-foreground leading-[0.92] mb-6">
+              MPII
+              <br />
+              <span className="text-primary">Gaze</span>
+            </h1>
+          </ScrollReveal>
+
+          <ScrollReveal delay={160}>
+            <p className="text-secondary-foreground text-lg leading-relaxed max-w-md mb-10 text-pretty">
+              A deep learning architecture for precision eye-tracking. 
+              Modified ResNet-18 backbone fused with head pose compensation 
+              for accurate gaze vector estimation.
+            </p>
+          </ScrollReveal>
+
+          <ScrollReveal delay={240}>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {stats.map((s) => (
+                <div key={s.label} className="rounded-lg border bg-card p-3 card-hover">
+                  <p className="font-mono text-xl font-bold text-foreground">{s.value}</p>
+                  <p className="text-xs font-medium text-muted-foreground mt-0.5">{s.label}</p>
+                  <p className="font-mono text-[10px] text-[hsl(var(--text-dim))]">{s.sub}</p>
+                </div>
+              ))}
+            </div>
+          </ScrollReveal>
         </div>
-      </ScrollReveal>
+
+        <ScrollReveal delay={200} direction="left">
+          <EyeVisualization />
+        </ScrollReveal>
+      </div>
     </div>
   </section>
 );

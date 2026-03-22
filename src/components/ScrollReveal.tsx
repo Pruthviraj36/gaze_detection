@@ -16,8 +16,13 @@ const ScrollReveal = ({ children, className, delay = 0, direction = "up" }: Scro
     const el = ref.current;
     if (!el) return;
     const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.unobserve(el); } },
-      { threshold: 0.15 }
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.unobserve(el);
+        }
+      },
+      { threshold: 0.12 }
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -28,7 +33,9 @@ const ScrollReveal = ({ children, className, delay = 0, direction = "up" }: Scro
       ref={ref}
       className={cn(
         visible
-          ? direction === "left" ? "animate-slide-in-left" : "animate-reveal-up"
+          ? direction === "left"
+            ? "animate-slide-in-left"
+            : "animate-reveal-up"
           : "opacity-0",
         className
       )}
