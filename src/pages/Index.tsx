@@ -4,6 +4,7 @@ import LayerSpecsSection from "@/components/LayerSpecsSection";
 import InferenceSection from "@/components/InferenceSection";
 import ComparisonSection from "@/components/ComparisonSection";
 import DemoSection from "@/components/DemoSection";
+import TrainingSection from "@/components/TrainingSection";
 
 const navLinks = [
   { href: "#architecture", label: "Architecture" },
