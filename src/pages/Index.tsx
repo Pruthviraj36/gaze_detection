@@ -9,6 +9,7 @@ import TrainingSection from "@/components/TrainingSection";
 const navLinks = [
   { href: "#architecture", label: "Architecture" },
   { href: "#specs", label: "Specs" },
+  { href: "#training", label: "Training" },
   { href: "#comparison", label: "Compare" },
   { href: "#demo", label: "Demo" },
   { href: "#inference", label: "Inference" },
