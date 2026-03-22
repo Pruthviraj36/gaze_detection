@@ -44,6 +44,7 @@ const Index = () => (
       <HeroSection />
       <ArchitectureSection />
       <LayerSpecsSection />
+      <TrainingSection />
       <ComparisonSection />
       <DemoSection />
       <InferenceSection />
