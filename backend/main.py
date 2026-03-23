@@ -5,7 +5,11 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 import logging
 
-from .utils import load_face_model, calculate_pose
+# Support both package imports (`backend.main`) and direct module imports (`main`).
+try:
+    from .utils import load_face_model, calculate_pose
+except ImportError:
+    from utils import load_face_model, calculate_pose
 import json
 
 # Setup logging
