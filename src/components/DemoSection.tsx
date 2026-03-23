@@ -6,11 +6,18 @@ import { toast } from "sonner";
 const DemoSection = () => {
   const [image, setImage] = useState<string | null>(null);
   const [fileObject, setFileObject] = useState<File | null>(null);
-  const [result, setResult] = useState<{ pitch: number; yaw: number; head_pitch?: number; head_yaw?: number } | null>(null);
+  const [result, setResult] = useState<{
+    pitch: number;
+    yaw: number;
+    roll: number;
+    prediction_source?: string;
+  } | null>(null);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [markingMode, setMarkingMode] = useState(false);
-  const [landmarks, setLandmarks] = useState<(number[] | null)[]>(new Array(6).fill(null));
+  const [landmarks, setLandmarks] = useState<(number[] | null)[]>(
+    new Array(6).fill(null),
+  );
   const [activeLandmarkIndex, setActiveLandmarkIndex] = useState<number>(0);
   const fileRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -21,7 +28,7 @@ const DemoSection = () => {
     "Right Eye Inner",
     "Right Eye Outer",
     "Left Mouth Corner",
-    "Right Mouth Corner"
+    "Right Mouth Corner",
   ];
 
   const handleUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,22 +99,24 @@ const DemoSection = () => {
     try {
       const formData = new FormData();
       formData.append("file", fileObject);
-      
-      const allLandmarksPlaced = landmarks.every(l => l !== null);
-      if (allLandmarksPlaced) {
-        formData.append("landmarks", JSON.stringify(landmarks));
-      } else {
-        formData.append("pitch", "0.0");
-        formData.append("yaw", "0.0");
-      }
 
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+      const allLandmarksPlaced = landmarks.every((l) => l !== null);
+      if (!allLandmarksPlaced) {
+        throw new Error(
+          "Please place all 6 landmarks before running inference.",
+        );
+      }
+      formData.append("landmarks", JSON.stringify(landmarks));
+
+      const apiBaseUrl =
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
       const response = await fetch(`${apiBaseUrl}/predict`, {
         method: "POST",
         body: formData,
       });
 
-      if (!response.ok) throw new Error(`Inference failed with status ${response.status}`);
+      if (!response.ok)
+        throw new Error(`Inference failed with status ${response.status}`);
 
       const data = await response.json();
       if (data.error) throw new Error(data.error);
@@ -115,15 +124,17 @@ const DemoSection = () => {
       setResult({
         pitch: parseFloat(data.pitch.toFixed(2)),
         yaw: parseFloat(data.yaw.toFixed(2)),
-        head_pitch: data.head_pitch !== undefined ? parseFloat(data.head_pitch.toFixed(2)) : undefined,
-        head_yaw: data.head_yaw !== undefined ? parseFloat(data.head_yaw.toFixed(2)) : undefined,
+        roll: parseFloat(data.roll.toFixed(2)),
+        prediction_source: data.prediction_source,
       });
-      if (data.head_pitch !== undefined) {
-        setMarkingMode(false);
-      }
-    } catch (err: any) {
+      setMarkingMode(false);
+    } catch (err: unknown) {
       console.error("Inference error:", err);
-      setError(err.message || "An error occurred during inference");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "An error occurred during inference",
+      );
     } finally {
       setProcessing(false);
     }
@@ -156,8 +167,8 @@ const DemoSection = () => {
             Try It Out
           </h2>
           <p className="text-secondary-foreground max-w-lg mb-16 text-pretty">
-            Upload a grayscale eye patch image and see simulated gaze estimation
-            output. Use landmarks for accurate head pose estimation.
+            Upload a face image, place 6 landmarks, and estimate head pose
+            directly from the 6-point .mat face model.
           </p>
         </ScrollReveal>
 
@@ -177,7 +188,7 @@ const DemoSection = () => {
                 >
                   <Upload className="w-8 h-8 text-muted-foreground/40 mb-3" />
                   <p className="text-sm text-muted-foreground mb-1">
-                    Drop eye patch image here
+                    Drop face image here
                   </p>
                   <p className="text-xs text-[hsl(var(--text-dim))]">
                     or click to browse
@@ -192,31 +203,38 @@ const DemoSection = () => {
                 </label>
               ) : (
                 <div className="relative">
-                  <div 
-                    className={`h-80 rounded-lg overflow-hidden bg-secondary flex items-center justify-center relative ${markingMode ? 'cursor-crosshair ring-2 ring-primary ring-inset' : ''}`}
+                  <div
+                    className={`h-80 rounded-lg overflow-hidden bg-secondary flex items-center justify-center relative ${markingMode ? "cursor-crosshair ring-2 ring-primary ring-inset" : ""}`}
                     onClick={handleImageClick}
                   >
                     <img
                       ref={imageRef}
                       src={image}
-                      alt="Uploaded eye patch"
-                      className="max-h-full max-w-full object-contain grayscale"
+                      alt="Uploaded face"
+                      className="max-h-full max-w-full object-contain"
                     />
-                    
+
                     {/* Landmark visualization */}
                     {landmarks.map((point, idx) => {
                       if (!point || !imageRef.current) return null;
-                      const x = (point[0] / imageRef.current.naturalWidth) * imageRef.current.clientWidth;
-                      const y = (point[1] / imageRef.current.naturalHeight) * imageRef.current.clientHeight;
-                      
+                      const x =
+                        (point[0] / imageRef.current.naturalWidth) *
+                        imageRef.current.clientWidth;
+                      const y =
+                        (point[1] / imageRef.current.naturalHeight) *
+                        imageRef.current.clientHeight;
+
                       return (
-                        <div 
+                        <div
                           key={idx}
                           className="absolute w-3 h-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white shadow-sm transition-colors"
-                          style={{ 
-                            left: `calc(50% - ${imageRef.current.clientWidth/2}px + ${x}px)`,
-                            top: `calc(50% - ${imageRef.current.clientHeight/2}px + ${y}px)`,
-                            backgroundColor: idx === activeLandmarkIndex && markingMode ? 'hsl(var(--primary))' : 'rgba(255, 255, 255, 0.7)'
+                          style={{
+                            left: `calc(50% - ${imageRef.current.clientWidth / 2}px + ${x}px)`,
+                            top: `calc(50% - ${imageRef.current.clientHeight / 2}px + ${y}px)`,
+                            backgroundColor:
+                              idx === activeLandmarkIndex && markingMode
+                                ? "hsl(var(--primary))"
+                                : "rgba(255, 255, 255, 0.7)",
                           }}
                         >
                           <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[10px] whitespace-nowrap font-mono text-white drop-shadow-md font-bold">
@@ -231,7 +249,9 @@ const DemoSection = () => {
                       <div className="absolute inset-0 overflow-hidden rounded-lg pointer-events-none">
                         <div
                           className="absolute inset-x-0 h-0.5 bg-primary/60 blur-[1px]"
-                          style={{ animation: "scan-line 1.5s linear infinite" }}
+                          style={{
+                            animation: "scan-line 1.5s linear infinite",
+                          }}
                         />
                       </div>
                     )}
@@ -245,20 +265,23 @@ const DemoSection = () => {
                           Marking: {LANDMARK_LABELS[activeLandmarkIndex]}
                         </p>
                         <span className="text-[10px] font-mono text-muted-foreground">
-                          {landmarks.filter(l => l !== null).length}/6 points
+                          {landmarks.filter((l) => l !== null).length}/6 points
                         </span>
                       </div>
                       <div className="flex gap-1.5 overflow-x-auto pb-1 invisible-scrollbar">
                         {LANDMARK_LABELS.map((_, idx) => (
                           <button
                             key={idx}
-                            onClick={(e) => { e.stopPropagation(); setActiveLandmarkIndex(idx); }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveLandmarkIndex(idx);
+                            }}
                             className={`flex-none w-7 h-7 rounded-md border flex items-center justify-center text-[10px] font-mono transition-colors ${
-                              activeLandmarkIndex === idx 
-                                ? 'bg-primary border-primary text-primary-foreground' 
-                                : landmarks[idx] 
-                                  ? 'bg-secondary border-muted-foreground/30 text-foreground'
-                                  : 'bg-transparent border-dashed text-muted-foreground'
+                              activeLandmarkIndex === idx
+                                ? "bg-primary border-primary text-primary-foreground"
+                                : landmarks[idx]
+                                  ? "bg-secondary border-muted-foreground/30 text-foreground"
+                                  : "bg-transparent border-dashed text-muted-foreground"
                             }`}
                           >
                             {idx + 1}
@@ -275,19 +298,21 @@ const DemoSection = () => {
                       className="flex-1 min-w-[140px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm transition-all duration-200 hover:opacity-90 active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <Play className="w-4 h-4" />
-                      {processing ? "Processing..." : "Run Inference"}
+                      {processing ? "Processing..." : "Estimate Pose"}
                     </button>
                     {!result && (
                       <button
                         onClick={() => setMarkingMode(!markingMode)}
                         className={`px-4 py-2.5 rounded-lg border flex items-center gap-2 transition-colors active:scale-[0.97] ${
-                          markingMode 
-                            ? 'bg-primary/10 border-primary text-primary' 
-                            : 'text-muted-foreground hover:text-foreground hover:border-muted-foreground/40'
+                          markingMode
+                            ? "bg-primary/10 border-primary text-primary"
+                            : "text-muted-foreground hover:text-foreground hover:border-muted-foreground/40"
                         }`}
                       >
                         <Crosshair className="w-4 h-4" />
-                        <span className="text-sm font-medium">Pose Markers</span>
+                        <span className="text-sm font-medium">
+                          Pose Markers
+                        </span>
                       </button>
                     )}
                     <button
@@ -317,10 +342,28 @@ const DemoSection = () => {
                 {error && (
                   <div className="flex flex-col items-center gap-3 p-6 text-center">
                     <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center text-destructive">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                      </svg>
                     </div>
-                    <p className="text-sm font-medium text-destructive">Inference Failed</p>
-                    <p className="text-xs text-muted-foreground max-w-[200px] font-mono break-words">{error}</p>
+                    <p className="text-sm font-medium text-destructive">
+                      Inference Failed
+                    </p>
+                    <p className="text-xs text-muted-foreground max-w-[200px] font-mono break-words">
+                      {error}
+                    </p>
                     <button
                       onClick={runInference}
                       className="mt-2 text-xs font-medium text-primary hover:underline"
@@ -341,16 +384,38 @@ const DemoSection = () => {
 
                 {result && (
                   <div className="w-full h-full relative">
-                    {/* Gaze visualization */}
+                    {/* Pose visualization */}
                     <svg viewBox="0 0 300 240" className="w-full h-full">
                       {/* Grid */}
-                      <line x1="150" y1="20" x2="150" y2="220" stroke="hsl(var(--border))" strokeWidth="0.5" strokeDasharray="4 4" />
-                      <line x1="30" y1="120" x2="270" y2="120" stroke="hsl(var(--border))" strokeWidth="0.5" strokeDasharray="4 4" />
+                      <line
+                        x1="150"
+                        y1="20"
+                        x2="150"
+                        y2="220"
+                        stroke="hsl(var(--border))"
+                        strokeWidth="0.5"
+                        strokeDasharray="4 4"
+                      />
+                      <line
+                        x1="30"
+                        y1="120"
+                        x2="270"
+                        y2="120"
+                        stroke="hsl(var(--border))"
+                        strokeWidth="0.5"
+                        strokeDasharray="4 4"
+                      />
 
                       {/* Origin */}
-                      <circle cx="150" cy="120" r="3" fill="hsl(var(--muted-foreground))" opacity="0.3" />
+                      <circle
+                        cx="150"
+                        cy="120"
+                        r="3"
+                        fill="hsl(var(--muted-foreground))"
+                        opacity="0.3"
+                      />
 
-                      {/* Gaze vector */}
+                      {/* Pose vector */}
                       <line
                         x1="150"
                         y1="120"
@@ -369,47 +434,61 @@ const DemoSection = () => {
                       />
 
                       {/* Labels */}
-                      <text x="155" y="232" fill="hsl(var(--muted-foreground))" fontSize="9" fontFamily="JetBrains Mono" opacity="0.5">yaw →</text>
-                      <text x="18" y="115" fill="hsl(var(--muted-foreground))" fontSize="9" fontFamily="JetBrains Mono" opacity="0.5" transform="rotate(-90, 18, 115)">pitch →</text>
+                      <text
+                        x="155"
+                        y="232"
+                        fill="hsl(var(--muted-foreground))"
+                        fontSize="9"
+                        fontFamily="JetBrains Mono"
+                        opacity="0.5"
+                      >
+                        yaw
+                      </text>
+                      <text
+                        x="18"
+                        y="115"
+                        fill="hsl(var(--muted-foreground))"
+                        fontSize="9"
+                        fontFamily="JetBrains Mono"
+                        opacity="0.5"
+                        transform="rotate(-90, 18, 115)"
+                      >
+                        pitch
+                      </text>
                     </svg>
                   </div>
                 )}
               </div>
 
               {result && (
-                <div className="grid grid-cols-2 gap-3 mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
                   <div className="rounded-lg border bg-secondary/50 p-3">
-                    <p className="text-xs text-muted-foreground mb-0.5">Gaze Pitch</p>
+                    <p className="text-xs text-muted-foreground mb-0.5">
+                      Pose Pitch
+                    </p>
                     <p className="font-mono text-lg font-bold text-foreground tabular-nums">
                       {result.pitch > 0 ? "+" : ""}
                       {result.pitch}°
                     </p>
                   </div>
                   <div className="rounded-lg border bg-secondary/50 p-3">
-                    <p className="text-xs text-muted-foreground mb-0.5">Gaze Yaw</p>
+                    <p className="text-xs text-muted-foreground mb-0.5">
+                      Pose Yaw
+                    </p>
                     <p className="font-mono text-lg font-bold text-foreground tabular-nums">
                       {result.yaw > 0 ? "+" : ""}
                       {result.yaw}°
                     </p>
                   </div>
-                  {result.head_pitch !== undefined && (
-                    <div className="col-span-2 grid grid-cols-2 gap-3 pt-2 border-t border-border/50">
-                       <div>
-                        <p className="text-[10px] text-muted-foreground uppercase font-mono mb-0.5">Head Pitch</p>
-                        <p className="font-mono text-sm font-semibold text-primary">
-                          {result.head_pitch > 0 ? "+" : ""}
-                          {result.head_pitch}°
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-muted-foreground uppercase font-mono mb-0.5">Head Yaw</p>
-                        <p className="font-mono text-sm font-semibold text-primary">
-                          {result.head_yaw > 0 ? "+" : ""}
-                          {result.head_yaw}°
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                  <div className="rounded-lg border bg-secondary/50 p-3">
+                    <p className="text-xs text-muted-foreground mb-0.5">
+                      Pose Roll
+                    </p>
+                    <p className="font-mono text-lg font-bold text-foreground tabular-nums">
+                      {result.roll > 0 ? "+" : ""}
+                      {result.roll}°
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

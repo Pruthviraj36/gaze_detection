@@ -1,24 +1,20 @@
 import ScrollReveal from "./ScrollReveal";
 
 const codeSnippet = `import torch, cv2
+const codeSnippet = `import json, requests
 
-# Load model
-model = torch.load("gaze_model.pth")
-model.eval()
+url = "http://localhost:8000/predict"
+landmarks = [
+  [30, 40], [45, 45], [55, 45],
+  [70, 40], [40, 70], [60, 70]
+]
 
-# Pre-process eye patch
-img = cv2.imread("eye.png", cv2.IMREAD_GRAYSCALE)
-img = cv2.resize(img, (64, 64))
-tensor = torch.tensor(img / 255.0, dtype=torch.float32)
-tensor = tensor.unsqueeze(0).unsqueeze(0)
+with open("face.jpg", "rb") as f:
+    files = {"file": f}
+    data = {"landmarks": json.dumps(landmarks)}
+    res = requests.post(url, files=files, data=data).json()
 
-# Head pose input
-head_pose = torch.tensor([[pitch, yaw]])
-
-# Run inference
-with torch.no_grad():
-    gaze = model(tensor, head_pose)
-    print(f"Gaze: {gaze}")  # → [pitch, yaw]`;
+print(res)  # -> {"pitch": ..., "yaw": ..., "roll": ...}`;
 
 const InferenceSection = () => (
   <section className="py-24 md:py-32 relative" id="inference">
@@ -35,18 +31,18 @@ const InferenceSection = () => (
               Inference
             </h2>
             <p className="text-secondary-foreground max-w-md mb-10 text-pretty">
-              Four preprocessing steps, then a single forward pass yields 
-              the gaze direction vector.
+              The frontend sends a face image and six facial landmarks.
+              The backend uses the .mat face model to estimate pose angles.
             </p>
           </ScrollReveal>
 
           <ScrollReveal delay={100}>
             <div className="space-y-5">
               {[
-                { n: "01", title: "Grayscale", desc: "Convert to single channel" },
-                { n: "02", title: "Resize 64×64", desc: "Standardize eye patch dimensions" },
-                { n: "03", title: "Normalize", desc: "Scale pixel values to [0, 1]" },
-                { n: "04", title: "Head Pose", desc: "Provide pitch & yaw as 2D vector" },
+                { n: "01", title: "Upload Image", desc: "Provide a face image file" },
+                { n: "02", title: "Mark 6 Points", desc: "Eyes and mouth corner landmarks" },
+                { n: "03", title: "POST /predict", desc: "Send image + landmarks JSON" },
+                { n: "04", title: "Read Pose", desc: "Use pitch, yaw, and roll response" },
               ].map((item) => (
                 <div key={item.n} className="flex items-start gap-4">
                   <span className="font-mono text-xs font-bold text-primary mt-1">{item.n}</span>
