@@ -1,0 +1,25 @@
+services:
+  # Backend FastAPI Service
+  - type: web
+    name: gaze-navigator-backend
+    env: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: gunicorn -k uvicorn.workers.UvicornWorker backend.main:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.0
+      - key: PORT
+        value: 8000
+
+  # Frontend Vite Static Site
+  - type: web
+    name: gaze-navigator-frontend
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: gaze-navigator-backend
+          property: host
